@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Plus, Ticket, Trophy, Trash2, List, ShieldCheck, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import PhysicsContainer from '../components/ui/physics-container';
-import { getBallColorByNumber } from '../lib/colors';
+import PhysicsContainer from '@/components/ui/physics-container';
+import { getBallColorByNumber } from '@/lib/colors';
 
 export type Ball = {
   id: string; 
@@ -88,7 +88,7 @@ export default function LuckyDrawPage() {
   const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const firebaseConfigInput = typeof __firebase_config !== 'undefined' ? __firebase_config : process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
+    let firebaseConfigInput: string | object | undefined = typeof __firebase_config !== 'undefined' ? __firebase_config : process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
     if (!firebaseConfigInput) {
       console.error("Firebase 설정이 없습니다.");
       return;
@@ -96,9 +96,14 @@ export default function LuckyDrawPage() {
 
     let firebaseConfig;
     try {
-      firebaseConfig = typeof firebaseConfigInput === 'string'
-        ? JSON.parse(firebaseConfigInput)
-        : firebaseConfigInput;
+        if (typeof firebaseConfigInput === 'string') {
+            if ((firebaseConfigInput.startsWith("'") && firebaseConfigInput.endsWith("'")) || (firebaseConfigInput.startsWith('"') && firebaseConfigInput.endsWith('"'))) {
+                firebaseConfigInput = firebaseConfigInput.substring(1, firebaseConfigInput.length - 1);
+            }
+            firebaseConfig = JSON.parse(firebaseConfigInput);
+        } else {
+            firebaseConfig = firebaseConfigInput;
+        }
     } catch (error) {
       console.error("Firebase 설정을 파싱하는 데 실패했습니다:", error);
       return;
@@ -288,7 +293,7 @@ export default function LuckyDrawPage() {
         </div>
       </main>
       <Dialog open={isResultModalOpen} onOpenChange={setIsResultModalOpen}>
-        <DialogContent className="max-w-sm"><div className="relative w-full h-full flex flex-col items-center justify-center text-center pt-8">{showConfetti && <Confetti />}<DialogHeader><DialogTitle className="text-2xl font-bold">🎉 당첨을 축하합니다! 🎉</DialogTitle><DialogDescription className="pt-2">그리고 우승자는...</DialogDescription></DialogHeader>{drawnBall && (<div className="my-8 transform-gpu animate-drawn-ball-tumble"><div className="relative flex items-center justify-center w-48 h-48 rounded-full text-white font-bold text-2xl shadow-2xl p-4 flex-col" style={{ backgroundColor: drawnBall.color }}><div className="absolute top-1/3 left-1/3 w-6 h-6 bg-white/40 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div><span className="text-5xl font-extrabold">{drawnBall.number}</span><span className="mt-2 text-xl font-semibold truncate">{drawnBall.name}</span><span className="mt-1 text-base opacity-80 truncate">{drawnBall.prize}</span></div></div>)}<DialogFooter className="w-full"><Button onClick={() => setIsResultModalOpen(false)} className="w-full">닫기</Button></DialogFooter></div></DialogContent>
+        <DialogContent className="max-w-sm"><div className="relative w-full h-full flex flex-col items-center justify-center text-center pt-8">{showConfetti && <Confetti />}<DialogHeader><DialogTitle className="text-2xl font-bold">🎉 당첨을 축하합니다! 🎉</DialogTitle><DialogDescription className="pt-2">그리고 우승자는...</DialogDescription></DialogHeader>{drawnBall && (<div className="my-8 transform-gpu animate-drawn-ball-tumble"><div className="relative flex items-center justify-center w-48 h-48 rounded-full text-white font-bold text-2xl shadow-2xl p-4 flex-col" style={{ backgroundColor: drawnBall.color }}><div className="absolute top-1/3 left-13 w-6 h-6 bg-white/40 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div><span className="text-5xl font-extrabold">{drawnBall.number}</span><span className="mt-2 text-xl font-semibold truncate">{drawnBall.name}</span><span className="mt-1 text-base opacity-80 truncate">{drawnBall.prize}</span></div></div>)}<DialogFooter className="w-full"><Button onClick={() => setIsResultModalOpen(false)} className="w-full">닫기</Button></DialogFooter></div></DialogContent>
       </Dialog>
       <Dialog open={isListModalOpen} onOpenChange={setIsListModalOpen}>
         <DialogContent className="max-w-3xl">
