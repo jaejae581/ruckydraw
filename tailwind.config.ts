@@ -107,6 +107,11 @@ export default {
           '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
           '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
         },
+        'blink-out': {
+         '0%, 100%': { opacity: '1' },
+         '25%, 75%': { opacity: '0' },
+         '50%': { opacity: '1' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -115,6 +120,7 @@ export default {
         'ball-in': 'ball-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
         'confetti-fall': 'confetti-fall ease-out forwards',
         'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite',
+        'blink-out': 'blink-out 1s ease-in-out',
       },
     },
   },
