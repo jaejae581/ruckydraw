@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import Matter from 'matter-js';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Ball } from '../../app/lucky-draw-page';
 
 interface PhysicsContainerProps {
@@ -37,6 +42,7 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
     const runner = runnerRef.current;
     
     engine.world.gravity.y = 1;
+    engine.enableSleeping = true;
 
     const element = sceneRef.current;
     if (!element) return;
@@ -55,16 +61,17 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
     Matter.Runner.run(runner, engine);
 
     const renderLoop = () => {
+      if (!engine.world) return;
       const allBodies = Matter.Composite.allBodies(engine.world);
+      
       allBodies.forEach(body => {
-          const maxSpeed = 15;
+          const maxSpeed = 20;
           if (body.velocity.x > maxSpeed) Matter.Body.setVelocity(body, { x: maxSpeed, y: body.velocity.y });
           if (body.velocity.x < -maxSpeed) Matter.Body.setVelocity(body, { x: -maxSpeed, y: body.velocity.y });
           if (body.velocity.y > maxSpeed) Matter.Body.setVelocity(body, { x: body.velocity.x, y: maxSpeed });
           if (body.velocity.y < -maxSpeed) Matter.Body.setVelocity(body, { x: body.velocity.x, y: -maxSpeed });
       });
 
-      if (!engine.world) return;
       const currentBalls = allBodies
         .map(body => {
           const ballData = ballsRef.current?.find(b => `ball-${b.id}` === body.label);
@@ -85,6 +92,7 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
   }, []);
 
   useEffect(() => {
+    if(!engineRef.current.world) return;
     const world = engineRef.current.world;
     const allBodies = Matter.Composite.allBodies(world);
     const existingBodyLabels = allBodies.map(b => b.label);
@@ -100,7 +108,7 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
         const { offsetWidth: width } = element;
         const newBallBody = Matter.Bodies.circle(
           Math.random() * (width - 56) + 28, -30, 28,
-          { label: ballLabel, restitution: 0.6, friction: 0.1, density: 0.05 }
+          { label: ballLabel, restitution: 0.6, friction: 0.1, density: 0.05, sleepThreshold: 60 }
         );
         Matter.World.add(world, newBallBody);
       }
@@ -108,22 +116,23 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
 
     if (hasNewBalls && topWallRef.current) {
         Matter.World.remove(world, topWallRef.current);
+        // [수정] 상단 벽이 다시 생기는 시간을 2.5초로 늘려 공이 충분히 들어올 시간을 줍니다.
         setTimeout(() => {
             if (topWallRef.current && !world.bodies.includes(topWallRef.current)) {
                 Matter.World.add(world, topWallRef.current);
             }
-        }, 1500);
+        }, 2500);
     }
 
-    allBodies.forEach(body => {
-      if (body.label.startsWith('ball-') && !ballLabels.includes(body.label)) {
-        Matter.World.remove(world, body);
-      }
-    });
+    const bodiesToRemove = allBodies.filter(body => body.label.startsWith('ball-') && !ballLabels.includes(body.label));
+    if (bodiesToRemove.length > 0) {
+        Matter.World.remove(world, bodiesToRemove);
+    }
   }, [balls]);
 
   useEffect(() => {
     if (isShaking) {
+      if(!engineRef.current.world) return;
       const allBodies = Matter.Composite.allBodies(engineRef.current.world);
       const element = sceneRef.current;
       if (!element) return;
@@ -132,13 +141,13 @@ const PhysicsContainer = ({ balls, isShaking, deletingBallIds }: PhysicsContaine
 
       allBodies.forEach(body => {
         if (body.label.startsWith('ball-')) {
+            Matter.Sleeping.set(body, false);
             const direction = Matter.Vector.sub(body.position, explosionCenter);
-            const distance = Matter.Vector.magnitude(direction);
-            if (distance < 1) return;
-            const forceMagnitude = 0.05 * body.mass; 
+            const distance = Matter.Vector.magnitude(direction) || 1;
+            const velocityMagnitude = 30 / Math.sqrt(distance); 
             Matter.Body.setVelocity(body, {
-                x: (direction.x / distance) * forceMagnitude * 30,
-                y: (direction.y / distance) * forceMagnitude * 30
+                x: (direction.x / distance) * velocityMagnitude + (Math.random() - 0.5) * 5,
+                y: (direction.y / distance) * velocityMagnitude + (Math.random() - 0.5) * 5,
             });
         }
       });
