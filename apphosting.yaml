@@ -1,7 +1,9 @@
-# Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_CONFIG
+    # [보안 수정] 민감한 API 키 값 대신, Cloud Secret Manager에 저장된 
+    # 보안 비밀의 이름을 참조하도록 변경합니다.
+    secret: FIREBASE_CONFIG_JSON
+  - variable: NEXT_PUBLIC_APP_ID
+    # 이 값은 민감하지 않으므로, 값을 그대로 사용합니다.
+    value: 'ruckydraw--studio-898000749-4fdd9'
 
-runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
